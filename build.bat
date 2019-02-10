@@ -1,0 +1,1 @@
+"C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\"vcvarsall.bat x64 && cl -Zi png_loader_test.cpp /link user32.lib
