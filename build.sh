@@ -1,0 +1,1 @@
+clang++ -x objective-c++ -g -o png_loader_test png_loader_test.cpp -framework Cocoa

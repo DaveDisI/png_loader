@@ -6,12 +6,22 @@
         {
             "label": "build_win",
             "type": "shell",
-            "command": "build",
+            "command": "build"
         },
         {
             "label": "run_win",
             "type": "shell",
-            "command": "png_loader_test",
+            "command": "png_loader_test"
+        },
+        {
+            "label": "build_osx",
+            "type": "shell",
+            "command": "sh ./build.sh",
+        },
+        {
+            "label": "run_osx",
+            "type": "shell",
+            "command": "./png_loader_test",
         }
     ]
 }
