@@ -89,8 +89,6 @@ PNGHuffman generatePNGHuffmanFromCodeLengths(u32 totalCodes, u32* lengths, u32 m
         }
     } 
 
-    printf("min: %u\tmax: %u\n", minLen, maxLen);
-
     free(b1Count);
     free(nextCode);
 
@@ -105,10 +103,6 @@ PNGHuffman generatePNGHuffmanFromCodeLengths(u32 totalCodes, u32* lengths, u32 m
                 values[j] = t;
             }
         }
-    }
-
-    for(u32 i = 0; i < totalCodesUsed; i++){
-        printf("c: %u\tv: %u\n", codes[i], values[i]);
     }
 
     PNGHuffman pngh;
@@ -139,7 +133,7 @@ u8* getPixelDataFromPNGImage(u8* fileData, u32* width, u32* height, u32* bitsPer
     u64 pngHeader = *(u64*)fileData;
     fileData += 8;
     if(pngHeader != PNG_HEADER){
-        printf("%lu\n", pngHeader);
+        printf("%llu\n", pngHeader);
         return 0;
     }
 
@@ -186,7 +180,7 @@ u8* getPixelDataFromPNGImage(u8* fileData, u32* width, u32* height, u32* bitsPer
             }
 
             totalImageSize = *width * *height * ((*bitsPerPixel / 8) > 0 ? (*bitsPerPixel / 8) : 1);
-            printf("W:%uH:%U\n", *width, *height); 
+            printf("W:%u\tH:%u\n", *width, *height); 
             printf("tis: %u\n", totalImageSize); 
         }else if(STR_TO_INT("IDAT") == chunkType){
             totalCompressedDataSize += chunkLength;
@@ -253,9 +247,58 @@ u8* getPixelDataFromPNGImage(u8* fileData, u32* width, u32* height, u32* bitsPer
                 offset += 3;
             }
 
-            PNGHuffman cLenHM = generatePNGHuffmanFromCodeLengths(19, codeLengths, 7);
-            u32* lenDistCodeLengths = ALLOCATE_MEMORY(u32, 286 + 32);
+            PNGHuffman cLenHuff = generatePNGHuffmanFromCodeLengths(19, codeLengths, 7);
 
+            u32 lenDistTotal = hlit + hdist;
+            u32 lenDistFound = 0;
+            u32* lenDistCodeLengths = ALLOCATE_MEMORY(u32, lenDistTotal);
+
+            while(lenDistFound < lenDistTotal){
+                u32 code = parseHuffmanCodeFromData(compressedData, &offset, &cLenHuff);
+                if(code < 16){
+                    lenDistCodeLengths[lenDistFound++] = code;
+                }else if(code == 16){
+                    u32 extraBits = readBitsFromArray(compressedData, offset, 2) + 3;
+                    offset += 2;
+                    for(u32 i = 0; i < extraBits; i++){
+                        lenDistCodeLengths[lenDistFound++] = lenDistCodeLengths[lenDistFound - 1];
+                    }
+                }else if(code == 17){
+                    u32 extraBits = readBitsFromArray(compressedData, offset, 3) + 3;
+                    offset += 3;
+                    for(u32 i = 0; i < extraBits; i++){
+                        lenDistCodeLengths[lenDistFound++] = 0;
+                    }
+                }else if(code == 18){
+                    u32 extraBits = readBitsFromArray(compressedData, offset, 7) + 11;
+                    offset += 7;
+                    for(u32 i = 0; i < extraBits; i++){
+                        lenDistCodeLengths[lenDistFound++] = 0;
+                    }
+                }else{
+                    return 0;
+                }
+            }
+
+            PNGHuffman litLenHuff = generatePNGHuffmanFromCodeLengths(hlit, lenDistCodeLengths, 15);
+            PNGHuffman distHuff = generatePNGHuffmanFromCodeLengths(hdist, lenDistCodeLengths + hlit, 15);
+
+            while(true){
+                u32 code = parseHuffmanCodeFromData(compressedData, &offset, &litLenHuff);
+                if(code == 256){
+                    printf("256 END!\n");
+                    break;
+                }else if(code < 256){
+                    printf("code: %u\n", code);
+                }else if(code < 265){
+                    u32 distCode = parseHuffmanCodeFromData(compressedData, &offset, &distHuff);
+                    u32 length = code - 254;
+                    printf("code: %u\tlen: %u\tdist:%u\n", code, length, distCode);
+                }else if(code < 268){
+                
+                }
+            }
+            
             break;
         }
         default : {}
