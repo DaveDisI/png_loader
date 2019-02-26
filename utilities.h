@@ -11,6 +11,8 @@
 #define f32 float
 #define f64 double
 
+#define ALLOCATE_MEMORY(X, Y) (X*)malloc((Y) * sizeof(X))
+
 #define SWAP16(V) (V >> 8 | V << 8)
 #define SWAP32(V) (((V >> 24) & 0xff) | ((V << 8) & 0xff0000) | ((V >> 8) & 0xff00) | ((V << 24) & 0xff000000))
 #define SWAP64(V) (((V >> 56) & 0xff) | ((V << 56) & 0xff00000000000000) | \
